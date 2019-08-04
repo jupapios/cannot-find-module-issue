@@ -1,27 +1,41 @@
-# CannotFindModuleIssue
+# ISSUE
+https://github.com/angular/universal/issues/1169#issuecomment-515274474
+```
+> node dist/server
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.2.0.
+internal/modules/cjs/loader.js:638
+    throw err;
+    ^
 
-## Development server
+Error: Cannot find module 'require("./server/main")'
+    at Function.Module._resolveFilename (internal/modules/cjs/loader.js:636:15)
+    at Function.Module._load (internal/modules/cjs/loader.js:562:25)
+    at Module.require (internal/modules/cjs/loader.js:690:17)
+    at require (internal/modules/cjs/helpers.js:25:18)
+```
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+## Repro steps:
+- `build:ssr`
+- `npm run serve:ssr`
 
-## Code scaffolding
+## What's causing the issue
+`libraryTarget: 'commonjs2'` in the `webpack.server.config.js` file, that is being used to make `app` "importable" from the outside, (i.e., using aws lambda)
+```
+const awsServerlessExpress = require('aws-serverless-express');
+const server = require('./dist/server');
+const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+const binaryMimeTypes = [
+...
+];
 
-## Build
+server.app.use(awsServerlessExpressMiddleware.eventContext());
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+const serverProxy = awsServerlessExpress.createServer(
+  server.app,
+  null,
+  binaryMimeTypes
+);
+module.exports.universal = (event, context) =>
+  awsServerlessExpress.proxy(serverProxy, event, context);
+```

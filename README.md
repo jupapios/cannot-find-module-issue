@@ -39,3 +39,6 @@ const serverProxy = awsServerlessExpress.createServer(
 module.exports.universal = (event, context) =>
   awsServerlessExpress.proxy(serverProxy, event, context);
 ```
+
+## Expected behavior
+You should be able to run the Universal server (`node dist/server` after compilation), and run the test file that imports the server (`node test.js`) and see a "it works!" in the console.

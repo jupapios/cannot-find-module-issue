@@ -15,7 +15,7 @@ Error: Cannot find module 'require("./server/main")'
 ```
 
 ## Repro steps:
-- `build:ssr`
+- `npm run build:ssr`
 - `npm run serve:ssr`
 
 ## What's causing the issue
